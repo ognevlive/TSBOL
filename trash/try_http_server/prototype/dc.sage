@@ -57,7 +57,7 @@ class DC_():
 
 		b = s_res * auxmath.normilize_coeffs2(s_res*self.h - m0, self.q)
 		print (b)
-		print (b.norm(2))
+		print (b.norm(310))
 
 
 
@@ -67,7 +67,7 @@ class DC_():
 
 		m = int(md5((D+str(r)).encode('utf-8')).hexdigest(),16)
 
-		b = (s * auxmath.normilize_coeffs2(s*self.h - m, self.q)).norm(2)
+		b = (s * auxmath.normilize_coeffs2(s*self.h - m, self.q)).norm(310)
 		print (b)
 
 

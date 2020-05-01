@@ -1,0 +1,23 @@
+<!doctype html>
+<title>{% block title %}{% endblock %} TSBOL </title>
+<h2>
+  TSBOL / Threshold Signature Based On Lattice
+</h2>
+<hr>
+Max users: {{ n }}
+
+<nav>
+  <h1>Flaskr</h1>
+  <ul>
+    <li><a href="{{ url_for('home') }}">Log Out</a>
+  </ul>
+</nav>
+<section class="content">
+  <header>
+    {% block header %}{% endblock %}
+  </header>
+  {% for message in get_flashed_messages() %}
+    <div class="flash">{{ message }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</section>
