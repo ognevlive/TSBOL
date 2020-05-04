@@ -24,7 +24,7 @@ def print_menu():
     print ("3. Connect")
     print ("4. Disconnect")
     print ("5. Offer user to kick")
-    print ("6. Exit")
+    print ("6. Change t")
     print ("7. Exit")
     print (67 * "-")
 
@@ -105,6 +105,15 @@ class User():
             encoded = base64.b64encode(pickle.dumps([self.h, m, s]))
             response = make_request(self.auth, action='sign', data=encoded)
             print (response)
+        elif status == 4:
+            print ('not implemented')
+
+    def change(self):
+        t_new = input("Enter new t: ")
+        encoded = base64.b64encode(t_new.encode())
+        response = make_request(self.auth, action='change', data=encoded)
+        print (response)
+
 
 
 loop = True       
@@ -135,8 +144,7 @@ while loop:
     elif choice==5:
         user.offer()
     elif choice==6:
-        print ("Menu 5 has been selected")
-        loop = False
+        user.change()
     elif choice==7:
         print ("Menu 5 has been selected")
         loop = False

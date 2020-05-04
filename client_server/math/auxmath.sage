@@ -123,12 +123,12 @@ def normilize_coeffs(f):
     R = f.parent()
     normilized_coeffs = []
     for i in range(f.degree()):
-        normilized_coeffs.append(int(round(x[i].n())))
+        normilized_coeffs.append(int(round(x[i])))
     return R(normilized_coeffs)
 
 def normilize_coeffs2(f, q):
     R = f.parent()
     normilized_coeffs = []
     for i in range(f.degree()):
-        normilized_coeffs.append(x[i].n() % q)
+        normilized_coeffs.append(x[i] % q)
     return R(normilized_coeffs)

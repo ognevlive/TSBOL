@@ -74,6 +74,11 @@ class HandleRequests(BaseHTTPRequestHandler):
 			self.send(params)
 			return
 
+		elif action == 'get_info_dc':
+			params = TC.get_info_dc()
+			self.send(params)
+			return
+
 		if self.check_auth() == False:
 			self.send(b'invalid credentials')
 	
@@ -111,6 +116,13 @@ class HandleRequests(BaseHTTPRequestHandler):
 				votes_yes.append(user)
 			self.send(b'ok')
 
+		elif action == 'change':
+			encoded = self.headers['Data']
+			new_t = base64.b64decode(encoded).decode('utf-8')
+			response = TC.change_t(int(new_t))
+			self.send(response)
+
+
 		# elif action == 'sign':
 		# 	encoded = self.headers['Data']
 		# 	params = base64.b64decode(encoded)
@@ -128,8 +140,9 @@ class HandleRequests(BaseHTTPRequestHandler):
 			self.send(b'nice')
 
 	def vote_result(self, args):
-		offered_username = args[0]
-		print (offered_username)
+		offered_username = args[1]
+		print (offered_username) # need fix, didnt test
+		t = TC.t if TC.t_new == None else TC.t_new 
 		if len(votes_yes) < TC.t:
 			print ('Not enouth votes')
 			for u in TC.active_users:
@@ -149,12 +162,9 @@ class HandleRequests(BaseHTTPRequestHandler):
 		for username in votes_yes:
 			h0, m0, s0 = TC.gen_partial_sign(h0, m0, s0, username)
 
-		shares = [TC.get_user_shares(x) for x in votes_yes[1:]]
-
+		shares = [TC.get_user_shares(x) for x in votes_yes]
 		data = pickle.dumps([h0, m0, s0] + shares)
-		print (shares, h0, m0, s0)
 		encoded = base64.b64encode(data)
-		print (len(encoded))
 		make_request(port=8081, action='generate', data=encoded)
 
 

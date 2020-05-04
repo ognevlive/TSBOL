@@ -1,13 +1,23 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer 
 from sage.all import *
 import socketserver
-import auxmath
-from shamir import Shamir
 from hashlib import md5
 import pickle
 import socket
 import requests
 import base64
+
+sys.path.insert(1, 'math')
+import auxmath
+from shamir import Shamir
+
+def Babai_CVP(Lattice, w):
+	L = Lattice.LLL()
+	vt = L.solve_left(vector(QQ, w))
+	v = vector(ZZ, [0]*len(L[0]))
+	for t, vi in zip(vt, L):
+		v += round(t) * vi
+	return v
 
 class DC_():
 	shares = []
@@ -25,17 +35,39 @@ class DC_():
 		return r.content
 
 	def get_info(self):
-		response = self.make_request('get_info')
-		self.t, self.n, self.q, self.p, self.h0, self.connected_users = pickle.loads(response)
+		response = self.make_request('get_info_dc')
+		self.t, self.n, self.q, self.p, self.h0, self.H, self.t_new = pickle.loads(response)
 
 	def gen_threshold_sign(self, h, m, s, shares):
+		self.get_info()
 		shaTSS = Shamir(self.t, self.n)
-		k = shaTSS.SC(self.p, shares).list()[0]
+
+		if self.t_new == None:
+			k = shaTSS.SC(self.p, shares).list()[0]
+		else:
+			M = []
+			for i in range(self.t+self.t_new):
+				row = [0] * (self.t+self.t_new)
+				if i < self.t_new:
+					row[i] = self.p
+				else:
+					row[i] = self.H / self.p
+					for j in range(self.t_new):
+						row[j] = shares[j][0] ** (i-self.t_new+1)
+				M.append(row)
+
+			M = matrix(QQ, M)
+			target = [x[1] for x in shares[:self.t_new]] + [0]*self.t
+			c = Babai_CVP(M, target)
+			R = Integers(self.p)
+			k = R((self.p/self.H)*c[self.t_new])
+
+		print (k)
 		kk = bin(int(str(k)))[2:]
 		R = m.parent()
 		f_len = int(kk[:8], 2)
 		fs_len = int(kk[8:16], 2)
-		
+
 		R = m.parent()
 		f  = R([-1*int(x) for x in kk[16:16+f_len]])
 		fs = R([-1*int(x) for x in kk[16+f_len:16+f_len+fs_len]])
@@ -78,8 +110,6 @@ class HandleRequests(BaseHTTPRequestHandler):
 			print ('generate')
 			content_length = int(self.headers['Content-Length'])
 			post_data = self.rfile.read(content_length)
-			print (content_length)
-
 			encoded = base64.b64decode(post_data)
 			data = pickle.loads(encoded)
 			h, m, s, shares = data[0], data[1], data[2], data[3:]

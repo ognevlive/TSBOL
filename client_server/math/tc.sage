@@ -39,9 +39,11 @@ class TC_():
 	df = 73
 	dg = 71
 	t = 2
-	n = 3
+	n = 5
 	T = 'transpose'
 	p = -1
+	H = None
+	t_new = None
 
 	members = []
 	#users_count = [range(1, n+1)]
@@ -90,17 +92,45 @@ class TC_():
 		#        del self.active_users[key]
 
 	def share_secret(self):
-		shaTSS = Shamir(self.t, self.n)
-		self.p, alpha = shaTSS.GC(128)
-		shares = shaTSS.DS(self.p, alpha, self.members[0].k)
+		self.k = 2048
+		self.shaTSS = Shamir(self.t, self.n)
+		self.p, alpha = self.shaTSS.GC(self.k)
+		print ('k ' + str(self.members[0].k))
+		shares = self.shaTSS.DS(self.p, alpha, self.members[0].k)
 		for i in range(1, self.n+1):
 			self.members[i].shares = shares[i-1]
+			self.members[i].alpha = shares[i-1][0]
 		print ('secret generated')
+
+	def change_t(self, t_new):
+		if t_new > self.n or t_new <= self.t:
+			return b'invalid new t'
+
+		sigma_c = 2**(-self.n)
+		appr = ((self.t+t_new)**(1/2)*2**((self.t+t_new)/2))
+		g_cvp = log(appr, 2)
+		sigma_F = t_new/self.t/self.k*(log(sigma_c**(-1/t_new)*self.n*self.t, 2) + g_cvp + 1)
+		alpha_noise = (1 - (1+sigma_F) / (t_new/self.t))
+		H = floor(self.p**alpha_noise / 2)
+		for i in range(1, self.n+1):
+			alpha = self.members[i].shares[0]
+			sigma = self.members[i].shares[1]
+			self.members[i].shares[1] = self.shaTSS.SG([alpha, sigma], self.p, H)
+			#self.members[i].status = ['4', ]
+		self.t_new = t_new
+		self.H = H
+		print (t_new)
+		return b'ok'
+
 
 	def get_info(self):
 		print (self.active_users)
 		return pickle.dumps([self.t, self.n, self.q, self.p, self.members[0].h, ', '.join(self.active_users.keys())])
 		#return pickle.dumps([self.q, self.members[0].h, self.p, self.t, self.n, self.NN])
+
+	def get_info_dc(self):
+		print ([self.t, self.n, self.q, self.p, self.members[0].h, self.H, self.t_new])
+		return pickle.dumps([self.t, self.n, self.q, self.p, self.members[0].h, self.H, self.t_new])
 
 	def get_user_status(self, username):
 		id = self.active_users[username]
