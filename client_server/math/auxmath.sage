@@ -1,6 +1,5 @@
 from sage.all import *
 
-RRR = RealField(40);
 P.<x> = PolynomialRing(ZZ);
 
 NN = 251
@@ -13,15 +12,15 @@ R1.<x> = PolynomialRing(ZZ)
 phi = x**NN - 1
 Rx = R1.quotient_by_principal_ideal(phi)
 
-def gen_fg(R, d):
-    print (d)
-    while True:
-        f = R.random_element()._polynomial
-        coef = f.coefficients()
-        l = len([x for x in coef if x == 1])
-        if l == d:
-            print (f)
-            return f
+# def gen_fg(R, d):
+#     print (d)
+#     while True:
+#         f = R.random_element()._polynomial
+#         coef = f.coefficients()
+#         l = len([x for x in coef if x == 1])
+#         if l == d:
+#             print (f)
+#             return f
 
 def gen_f(R, df):
     f = R.random_element()._polynomial
@@ -108,7 +107,6 @@ def gen_NTRU_fgFG(NN, q):
         k = Compute_k(f,g,F,G,NN)
     fg = f*G % phi
     gf = g*F % phi
-    #print(q == fg - gf)
     if(fg - gf != q):
         print ('error')
         return -1
@@ -116,19 +114,24 @@ def gen_NTRU_fgFG(NN, q):
 
 def h_from_fg(f,g,N,q):
     f_1 = Inverse(f,N,q)
-    h = ((f_1*g).quo_rem(phi)[1]).quo_rem(q)[1]
+#    one = f.parent().one()
+#    print (f * f_1 % phi % q == one)
+    #h = ((f_1*g).quo_rem(phi)[1]).quo_rem(q)[1]
+    h = (f_1*g) % phi % q
+
     return h
 
 def normilize_coeffs(f):
     R = f.parent()
     normilized_coeffs = []
-    for i in range(f.degree()):
-        normilized_coeffs.append(int(round(x[i])))
+    for i in range(f.degree() + 1):
+        normilized_coeffs.append(int(round(f[i])))
     return R(normilized_coeffs)
 
 def normilize_coeffs2(f, q):
+#    phi = x**N - 1
     R = f.parent()
     normilized_coeffs = []
-    for i in range(f.degree()):
-        normilized_coeffs.append(x[i] % q)
+    for i in range(f.degree() + 1):
+        normilized_coeffs.append(f[i] % q)
     return R(normilized_coeffs)
