@@ -118,15 +118,13 @@ def h_from_fg(f,g,N,q):
 #    print (f * f_1 % phi % q == one)
     #h = ((f_1*g).quo_rem(phi)[1]).quo_rem(q)[1]
     h = (f_1*g) % phi % q
-
     return h
 
-def normilize_coeffs(f):
-    R = f.parent()
+def normilize_coeffs(R, f):
     normilized_coeffs = []
     for i in range(f.degree() + 1):
         normilized_coeffs.append(int(round(f[i])))
-    return R(normilized_coeffs)
+    return R(normilized_coeffs)._polynomial
 
 def normilize_coeffs2(f, q):
 #    phi = x**N - 1
@@ -134,4 +132,11 @@ def normilize_coeffs2(f, q):
     normilized_coeffs = []
     for i in range(f.degree() + 1):
         normilized_coeffs.append(f[i] % q)
+    return R(normilized_coeffs)
+
+def normilize_coeffs3(f):
+    R = f.parent()
+    normilized_coeffs = []
+    for i in range(f.degree() + 1):
+        normilized_coeffs.append(1/2)#f[i] - int(round(f[i])))
     return R(normilized_coeffs)

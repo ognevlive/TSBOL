@@ -24,14 +24,14 @@ def norm(v):
 	n = len(coefs)
 	sum1 = 0
 	sum2 = 0
-	for vi in coefs[:n]:
-		sum1 += abs(vi)**2
-	norm = sum1**(1/2).n()
 	# for vi in coefs[:n]:
 	# 	sum1 += abs(vi)**2
-	# 	sum2 += vi
-	# sum2 = 1/n * sum2 ** 2
-	# norm = (sum1 - sum2)**(1/2).n()
+	# norm = sum1**(1/2).n()
+	for vi in coefs:
+		sum1 += abs(vi)**2
+		sum2 += abs(vi)
+	sum2 = 1/n * sum2 ** 2
+	norm = (sum1 - sum2)**(1/2).n()
 	return norm
 
 
@@ -49,7 +49,7 @@ class Member:
 		if T == 'standard':
 			self.fs = self.F
 		elif T == 'transpose':
-			self.fs = self.g
+			self.fs = self.G
 		self.h = auxmath.h_from_fg(self.f,self.fs,N,q)
 
 	def eval_k(self):
@@ -86,11 +86,6 @@ class TC_():
 		#fs_bin = ''.join(['0' * (self.NN - len(self.members[0].fs.list()))] + [bin(abs(x))[2:] for x in self.members[0].fs.list()])
 		#self.share_secret()
 
-	def get_free_id(self):
-		for i in range(1, self.n+1):
-			if i not in self.active_users.values():
-				return i
-		return -1
 
 	def add_member(self):
 		f,g,F,G = auxmath.gen_NTRU_fgFG(self.NN, self.q)
@@ -102,57 +97,99 @@ class TC_():
 
 
 	def gen_partial_sign(self):
-		D = '77777'
+		D = '123111'
 		r = 0
-		m = int(md5((D+bin(r)[2:]).encode('utf-8')).hexdigest(),16)
-		s = 0
-		h = self.members[0].h
 
 		R1.<x> = PolynomialRing(ZZ)
 		phi = x**self.NN - 1
+		Rx = R1.quotient_by_principal_ideal(phi)
 
-		for i in range(1,3):
-			print ('member %d' % i)
-			user = self.members[i]
+		while True:
+			s = 0
+			m = int(md5((D+str(r)).encode('utf-8')).hexdigest(),16)
+			#h = self.members[0].h
 
-			x = auxmath.normilize_coeffs((-(1/self.q)*m*user.fs))
-			y = auxmath.normilize_coeffs((-(1/self.q)*m*user.f)) 
-			s0 = (x*user.f) + (y*user.fs)
+			for i in range(1,3):
+				h = self.members[i-1].h
 
-			m = auxmath.normilize_coeffs2(s0 * (user.h - h), self.q)
+				user = self.members[i]
+				#print ('member %d' % i)
 
-			s = s + s0
-			h = user.h	
+				x = auxmath.normilize_coeffs(Rx, (-1 * m * user.fs)/self.q)
+				y = auxmath.normilize_coeffs(Rx, (-1 * m * user.f) /self.q)
+				#x = Rx(auxmath.normilize_coeffs(-(1/self.q)*m*user.fs))._polynomial
+				#y = Rx(auxmath.normilize_coeffs(-(1/self.q)*m*user.f))._polynomial
 
-		return [h,m,s]
+				s0 = auxmath.normilize_coeffs2(Rx(x*user.f)._polynomial + Rx(y*user.fs)._polynomial, self.q)
+
+				m = auxmath.normilize_coeffs2(Rx(s0 * (user.h - h))._polynomial, self.q)
+				#m = Rx(s0 * (auxmath.normilize_coeffs2(user.h - h, self.q)))._polynomial#, self.q)
+				s = s0 + s
+				#s = auxmath.normilize_coeffs2(s + s0, self.q)
+
+			if s == 0:
+				print ('s = 0!')
+				continue
+				exit()
+
+			b = self.gen_threshold_sign(m, s, r, D)
+			if r % 1000 == 0:
+				print (r, b)
+
+			if b < 500:
+				print (b)
+			
+			if b < 310:
+				print ('r = %d' % r)
+				print ('b = %d' % b)
+				return [D, r, s]
+
+			r+=1
+
+	def verify(self, D, r, s):
+		R1.<x> = PolynomialRing(ZZ)
+		phi = x**self.NN - 1
+		Rx = R1.quotient_by_principal_ideal(phi)
+
+		m = md5((D+bin(r)[2:]).encode('utf-8')).hexdigest()#.hexdigest(),16)
+		h0 = self.members[0].h
+		print (r)
+		print (s)
+
+		#b = (s.norm(2)**2 + auxmath.normilize_coeffs2(Rx(s*h0 - m)._polynomial, self.q).norm(2)**2)**0.5
+		#print (b)
+		print ('-'*20)
 
 
-	def gen_threshold_sign(self, h, m, s):
+	def gen_threshold_sign(self, m, s, r, D):
 		h0 = self.members[0].h
 		f0 = self.members[0].f
 		fs0 = self.members[0].fs
 
-		D = '77777'
-		r = 0
-		m0 = int(md5((D+bin(r)[2:]).encode('utf-8')).hexdigest(),16)
+		R1.<x> = PolynomialRing(ZZ)
+		phi = x**self.NN - 1
+		Rx = R1.quotient_by_principal_ideal(phi)
 
-		x = auxmath.normilize_coeffs(-(1/self.q)*m*fs0)
-		y = auxmath.normilize_coeffs(-(1/self.q)*m*f0)
-		s0 = x*f0 + y*fs0
+		x = auxmath.normilize_coeffs(Rx, (-1 * m * fs0)/self.q)
+		y = auxmath.normilize_coeffs(Rx, (-1 * m * f0) /self.q)
+		#x = Rx(auxmath.normilize_coeffs(-(1/self.q)*m*fs0))._polynomial
+		#y = Rx(auxmath.normilize_coeffs(-(1/self.q)*m*f0))._polynomial
 
+		s0 = auxmath.normilize_coeffs2(Rx(x*f0)._polynomial + Rx(y*fs0)._polynomial, self.q)
+
+		#s = auxmath.normilize_coeffs2(s + s0, self.q)
 		s = s + s0
 
-		b = (s.norm(2)**2 + auxmath.normilize_coeffs2((s*h0 - m0), self.q).norm(2)**2)**0.5
-		print (b)
-		print ('-' * 20)
-
-
-		m0 = int(md5((D+bin(r)[2:]).encode('utf-8')).hexdigest(),16) ** 2
-		s = s + 22 #* s
-		b = (s.norm(2)**2 + auxmath.normilize_coeffs2((s*h0 - m0), self.q).norm(2)**2)**0.5
-		print (b)
+		m0 = int(md5((D+str(r)).encode('utf-8')).hexdigest(),16)
+		#b = (s.norm(2)**2 + auxmath.normilize_coeffs2(Rx(s*h0 - m0)._polynomial, self.q).norm(2)**2)**0.5
+		b = (norm(s)**2 + norm(auxmath.normilize_coeffs2(Rx(s*h0)._polynomial - m0, self.q))**2)**0.5
+		return b
 
 
 TC = TC_()
-hms = TC.gen_partial_sign()
-TC.gen_threshold_sign(hms[0], hms[1], hms[2])
+D, r, s = TC.gen_partial_sign()
+print (s)
+TC.verify(D, r, s)
+TC.verify(D, 0, s)
+TC.verify(D, 111110, s)
+TC.verify(D, 222222222220, s)
