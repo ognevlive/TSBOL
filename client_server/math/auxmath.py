@@ -6,7 +6,7 @@ from sage.all_cmdline import *   # import sage library
 _sage_const_251 = Integer(251); _sage_const_128 = Integer(128); _sage_const_73 = Integer(73); _sage_const_71 = Integer(71); _sage_const_1 = Integer(1); _sage_const_0 = Integer(0); _sage_const_2 = Integer(2)
 from sage.all import *
 
-P = PolynomialRing(ZZ, names=('x',)); (x,) = P._first_ngens(1);
+#P.<x> = PolynomialRing(ZZ);
 
 NN = _sage_const_251 
 q = _sage_const_128 
@@ -68,6 +68,10 @@ def conv(f,g):
 
 def Reverse(f,N):
     g = sum( f[i]*(x**(N-i)) for i in (ellipsis_range(_sage_const_1 ,Ellipsis,N-_sage_const_1 )) );
+    print (g)
+    print (type(g))
+    print (Rx(g))
+    exit()
     return f[_sage_const_0 ] - g;
 
 def Inverse(f,N,q):
@@ -88,6 +92,9 @@ def Compute_k(f,g,F,G,N):
     GB = Reverse(G,N)
     fb = Reverse(f,N)
     gb = Reverse(g,N)
+    print (type(fb))
+    print (type(F))
+    exit()
     num = (fb*F+gb*G).quo_rem(phi)[_sage_const_1 ]
     den = (f*fb+g*gb).quo_rem(phi)[_sage_const_1 ]
     (a,iden,iphi) = xgcd(den,phi)
@@ -107,6 +114,7 @@ def gen_NTRU_fgFG(NN, q):
     F = -q*beta*rho_g;
     G = q*alpha*rho_f;
     k = Compute_k(f,g,F,G,NN)
+
     while (k!= _sage_const_0 ):
         F = (F - k*f).quo_rem(phi)[_sage_const_1 ]
         G = (G - k*g).quo_rem(phi)[_sage_const_1 ]

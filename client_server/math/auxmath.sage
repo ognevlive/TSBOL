@@ -1,6 +1,6 @@
 from sage.all import *
 
-P.<x> = PolynomialRing(ZZ);
+#P.<x> = PolynomialRing(ZZ);
 
 NN = 251
 q = 128
@@ -62,6 +62,7 @@ def conv(f,g):
 
 def Reverse(f,N):
     g = sum( f[i]*(x^(N-i)) for i in [1..N-1] );
+    exit()
     return f[0] - g;
 
 def Inverse(f,N,q):
@@ -82,6 +83,9 @@ def Compute_k(f,g,F,G,N):
     GB = Reverse(G,N)
     fb = Reverse(f,N)
     gb = Reverse(g,N)
+    print (type(fb))
+    print (type(F))
+    exit()
     num = (fb*F+gb*G).quo_rem(phi)[1]
     den = (f*fb+g*gb).quo_rem(phi)[1]
     (a,iden,iphi) = xgcd(den,phi)
@@ -101,6 +105,7 @@ def gen_NTRU_fgFG(NN, q):
     F = -q*beta*rho_g;
     G = q*alpha*rho_f;
     k = Compute_k(f,g,F,G,NN)
+
     while (k!= 0):
         F = (F - k*f).quo_rem(phi)[1]
         G = (G - k*g).quo_rem(phi)[1]
