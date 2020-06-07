@@ -1,6 +1,7 @@
 from sage.all import *
 import socketserver
 import pickle
+import time
 from shamir import Shamir
 from hashlib import sha1
 
@@ -126,12 +127,13 @@ class Member:
 		self.h = h_from_fg(self.f, self.fs, N, q)
 
 		
-	def eval_k(self):
+	def eval_k(self, q):
 		# save unsigned values, remember it
 		f_bin  = ''.join([bin(abs(x))[2:] for x in  self.f.list()])
 		fs_bin = ''.join([bin(abs(x))[2:] for x in self.fs.list()])
-		h_bin  = ''.join([bin(abs(x))[2:] for x in self.h.list()])
-		self.k = int(bin(len(f_bin))[2:] + bin(len(fs_bin))[2:] + f_bin + fs_bin + h_bin, 2)
+		#h_bin  = ''.join([bin(abs(x))[2:] for x in self.h.list()])
+		self.T = int(time.time())
+		self.k = int(bin(len(f_bin))[2:] + bin(len(fs_bin))[2:] + f_bin + fs_bin + bin(self.T)[2:], 2)
 		
 	def update_ms(self, m, s):
 		self.m = m
@@ -170,7 +172,7 @@ class TC_():
 
 	def add_member(self):
 		m = Member(self.N, self.q, self.df, self.dg, self.T)
-		m.eval_k()
+		m.eval_k(self.q)
 		self.members.append(m)
 
 	def get_new_member_params(self, username):
@@ -192,9 +194,11 @@ class TC_():
 		del self.active_users[username]
 	
 	def share_secret(self):
-		self.k = 2048
+		self.k = 1024
 		self.shaTSS = Shamir(self.t, self.n)
 		self.p, alpha = self.shaTSS.GC(self.k)
+		self.T = self.members[0].T
+		print ('T: %d' % self.T)
 		print ('k ' + str(self.members[0].k))
 		shares = self.shaTSS.DS(self.p, alpha, self.members[0].k)
 		for i in range(1, self.n+1):
@@ -229,7 +233,7 @@ class TC_():
 
 	def get_info_dc(self):
 		#print ([self.t, self.n, self.q, self.N, self.p, self.members[0].h, self.H, self.t_new])
-		return pickle.dumps([self.t, self.n, self.q, self.N, self.p, self.members[0].h, self.H, self.t_new])
+		return pickle.dumps([self.t, self.n, self.N, self.q, self.T, self.p, self.members[0].h, self.H, self.t_new])
 
 	def get_user_status(self, username):
 		id = self.active_users[username]

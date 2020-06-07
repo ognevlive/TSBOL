@@ -46,15 +46,24 @@ class DC_():
 		
 	def get_info(self):
 		response = self.make_request('get_info_dc')
-		self.t, self.n, self.q, self.N, self.p, self.h0, self.H, self.t_new = pickle.loads(response)
+		self.t, self.n, self.N, self.q, self.T, self.p, self.h0, self.H, self.t_new = pickle.loads(response)
 
 	def make_request(data='', action=''):
 		r = requests.post('http://localhost:8080', headers={'Action' : action})
 		return r.content
 
-	def gen_threshold_sign(self, h, m, s, shares):
+	def gen_threshold_sign(self, h, m, s, i, shares):
 		self.get_info()
 		shaTSS = Shamir(self.t, self.n)
+
+		if i == 0:
+			print ('UPDATE')
+			print ('UPDATE')
+			print ('UPDATE')
+			print ('UPDATE')
+			self.fs = None
+			self.f = None
+			print (shares)
 
 		# if self.t_new == None:
 		# 	k = shaTSS.SC(self.p, shares).list()[0]
@@ -85,9 +94,13 @@ class DC_():
 			kk = bin(int(str(k)))[2:]
 			f_len = int(kk[:8], 2)
 			fs_len = int(kk[8:16], 2)
-			
+			print (k)
 			self.f  = Rx([-1*int(x) for x in kk[16:16+f_len]])._polynomial
 			self.fs = Rx([-1*int(x) for x in kk[16+f_len:16+f_len+fs_len]])._polynomial
+			T  = int(kk[16+f_len+fs_len:], 2)
+			print (T)
+			if T != self.T:
+				return -1
 
 		x = Rx(normilize_coeffs(-1/self.q * m * self.fs))._polynomial % self.q
 		y = Rx(normilize_coeffs(1/self.q * m * self.f))._polynomial % self.q

@@ -30,10 +30,11 @@ class HandleRequests(BaseHTTPRequestHandler):
 			post_data = self.rfile.read(content_length)
 			encoded = base64.b64decode(post_data)
 			data = pickle.loads(encoded)
-			h, m, s, shares = data[0], data[1], data[2], data[3:]
-			b = DC.gen_threshold_sign(h, m, s, shares)
+			h, m, s, i, shares = data[0], data[1], data[2], data[3], data[4:]
+			print (i, shares)
+			b = DC.gen_threshold_sign(h, m, s, i, shares)
 			self.send(pickle.dumps(b))
-	
+
 		elif action == 'add_shares':
 			print ('add_shares')
 			self.send(b'add_shares')

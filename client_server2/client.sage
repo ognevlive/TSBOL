@@ -6,6 +6,7 @@ from hashlib import md5, sha1
 from http.server import BaseHTTPRequestHandler, HTTPServer 
 from time import sleep
 from random import randint
+import signal
 
 sys.path.insert(1, 'math')
 import auxmath
@@ -15,13 +16,18 @@ R1.<x> = PolynomialRing(ZZ)
 phi = x**N - 1
 Rx = R1.quotient_by_principal_ideal(phi)
 
+
+def interrupt(signum, frame):
+    raise Exception('')
+signal.signal(signal.SIGUSR1, interrupt) 
+
+def pause():
+    signal.alarm(2)
+
 def H1(D):
     return bin(int(sha1(D.encode('utf-8')).hexdigest(), 16))
 
 def H(D, N, q):
-    print ('!')
-    print (D, N, q)
-    print (D)
     h1 = H1(D)
     i = 0
     h = ''
@@ -78,6 +84,7 @@ def print_menu():
 class User():
     def __init__(self, login='root', password='toor'):
         a = str(randint(1, 1111))
+        print (a)
         self.auth = (a, a)
 
     def login(self):
@@ -123,13 +130,12 @@ class User():
         si = (Rx(x*self.f)._polynomial % self.q + Rx(y*self.fs)._polynomial % self.q) % self.q
         m = Rx(si * (self.h - h))._polynomial % self.q
         s = s + si
-        return self.h, m, s
+        return self.h, m, s, self.shares
 
     def offer(self):
         username = input("Enter offered username: ")
         encoded = base64.b64encode(username.encode())
         response = make_request(self.auth, action='offer', data=encoded)
-        print (response)
         #r = 0
         # m0 = int(md5((username+str(r)).encode('utf-8')).hexdigest(),16)
         # s0 = 0
@@ -147,16 +153,20 @@ class User():
         status, data = int(params[0]), params[1]
 
         if status == 1:
-            answer = input('\nDo u wonna kick %s?' % data)
+            pause()
+            sleep(3)
+            answer = input('\nDo u wonna kick %s? ' % data)
             response = make_request(self.auth, action='vote', data=answer.encode())
         elif status == 2:
             print ('\nNot enouth votes for kick')
-        elif status == 3: # sign, not used now
+        elif status == 3:
             h_, m_, s_ = data[0], data[1], data[2]
-            h, m, s = self.gen_partial_sign(h_, m_, s_)
-            encoded = base64.b64encode(pickle.dumps([self.h, m, s]))
+            h, m, s, shares = self.gen_partial_sign(h_, m_, s_)
+            encoded = base64.b64encode(pickle.dumps([self.h, m, s, shares]))
             response = make_request(self.auth, action='sign', data=encoded)
         elif status == 4:
+            self.shares = data
+        elif status > 4:
             print ('not implemented')
 
     def change(self):
@@ -166,7 +176,6 @@ class User():
         print (response)
 
     def encode_msg(self, D, r):
-        print (D)
         return H(D + str(r), self.N, self.q)
             
     def verify(self):
@@ -186,17 +195,20 @@ user.connect() # autoconnect
 
 class ServerThread(threading.Thread):
    def run(self):
-        while loop:
+        while True:
             sleep(3)
             user.check_status()
-     
+                
 thread1 = ServerThread()
 thread1.start()
 
 while loop:
     print_menu()
-    choice = int(input("Enter your choice [1-5]: "))
-    
+    try:
+        choice = int(input("Enter your choice [1-5]: "))
+    except:
+        signal.alarm(0)
+        signal.signal(signal.SIGUSR1, interrupt) 
     if choice==1:     
         user.login()
     elif choice==2:
@@ -212,6 +224,10 @@ while loop:
     elif choice==7:
         user.verify()
     elif choice==8:
-        loop = False
+        pass
+        #loop = False
     else:
-        print("Wrong option selection. Enter any key to try again..")
+        sleep(8)
+        #print("Wrong option selection. Enter any key to try again..")
+
+

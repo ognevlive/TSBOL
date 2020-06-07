@@ -16,7 +16,7 @@ import tc
 TC = tc.TC_()
 
 users_db = 'users.db'
-votes_yes = []
+votes_yes = set()
 
 
 def norm(v, N):
@@ -123,7 +123,7 @@ class HandleRequests(BaseHTTPRequestHandler):
 			
 			for u in TC.active_users:
 				if u == user:
-					votes_yes.append(u)
+					votes_yes.add(u)
 					continue
 				TC.set_user_status(u, ['1', offered_username])
 			Timer(10.0, self.vote_result, [offered_username]).start()
@@ -133,7 +133,7 @@ class HandleRequests(BaseHTTPRequestHandler):
 			answer = self.headers['Data']
 			TC.set_user_status(user, ['0', ''])
 			if answer == 'yes':
-				votes_yes.append(user)
+				votes_yes.add(user)
 			self.send(b'ok')
 
 		elif action == 'change':
@@ -159,13 +159,14 @@ class HandleRequests(BaseHTTPRequestHandler):
 
 		elif action == 'verify':
 			self.send(pickle.dumps([TC.s, TC.D, TC.r]))
-		
+
 		else:
 			print ('its ok')
 			self.send(b'nice')
 
 	def vote_result(self, offered_username):
-		print (TC.active_users)
+		global votes_yes
+		print ('vote: %s' % str(votes_yes))
 		#t = TC.t if TC.t_new == None else TC.t_new 
 		if len(votes_yes) < TC.t:
 			print ('Not enouth votes')
@@ -223,13 +224,17 @@ class HandleRequests(BaseHTTPRequestHandler):
 		# 		exit()
 #			print (b)
 
-		shares = [TC.get_user_shares(x) for x in votes_yes]
+		#shares = [TC.get_user_shares(x) for x in votes_yes]
+		print ('start sign')
+
+		i = 0
 		while True:
 			r = randint(0, 7777777)
 			m = m0 = TC.encode_msg(offered_username, r)
 			s = 0
 			h = TC.members[0].h
 			
+			shares = []
 			for username in votes_yes:
 				id = TC.active_users.get(username)
 				member = TC.members[id]
@@ -237,24 +242,44 @@ class HandleRequests(BaseHTTPRequestHandler):
 				TC.set_user_status(username, ['3', [h, m, s]])
 				while member.signed == False:
 					pass
-				h, m, s = hms[0], hms[1], hms[2]
+				h, m, s, share = hms[0], hms[1], hms[2], hms[3]
+				shares.append(share)
 
-			data = pickle.dumps([h, m, s] + shares)
+			data = pickle.dumps([h, m, s, i] + shares)
 			encoded = base64.b64encode(data)
 			data = make_request(port=8081, action='generate', data=encoded)
 			s = pickle.loads(data)
+			if s == -1:
+				print ('Invalid timestamp')
+				votes_yes = set()
+				return
 			n = norm(s, TC.N) + norm((s*TC.members[0].h - m0) % TC.q, TC.N)
 			if n < 0:
 				continue
 			b = sqrt(n)
-
 			if b < 310:
 				print (b)
 				TC.s = s
 				TC.D = offered_username
 				TC.r = r
 				break
+			i+=1
 
+		#TC.delete_user(offered_username)
+
+		votes_yes = set()
+		TC.share_secret()
+		for username in TC.active_users.keys():
+			if username == offered_username:
+				continue
+			id = TC.active_users.get(username)
+			member = TC.members[id]
+			TC.set_user_status(username, ['4', TC.members[id].shares])
+		sleep(5)
+		for username in TC.active_users.keys():
+			id = TC.active_users.get(username)
+			member = TC.members[id]
+			TC.set_user_status(username, ['0', ''])
 
 
 if os.path.exists(users_db) == False:

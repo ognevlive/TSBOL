@@ -52,15 +52,24 @@ class DC_():
 		
 	def get_info(self):
 		response = self.make_request('get_info_dc')
-		self.t, self.n, self.q, self.N, self.p, self.h0, self.H, self.t_new = pickle.loads(response)
+		self.t, self.n, self.N, self.q, self.T, self.p, self.h0, self.H, self.t_new = pickle.loads(response)
 
 	def make_request(data='', action=''):
 		r = requests.post('http://localhost:8080', headers={'Action' : action})
 		return r.content
 
-	def gen_threshold_sign(self, h, m, s, shares):
+	def gen_threshold_sign(self, h, m, s, i, shares):
 		self.get_info()
 		shaTSS = Shamir(self.t, self.n)
+
+		if i == _sage_const_0 :
+			print ('UPDATE')
+			print ('UPDATE')
+			print ('UPDATE')
+			print ('UPDATE')
+			self.fs = None
+			self.f = None
+			print (shares)
 
 		# if self.t_new == None:
 		# 	k = shaTSS.SC(self.p, shares).list()[0]
@@ -91,9 +100,13 @@ class DC_():
 			kk = bin(int(str(k)))[_sage_const_2 :]
 			f_len = int(kk[:_sage_const_8 ], _sage_const_2 )
 			fs_len = int(kk[_sage_const_8 :_sage_const_16 ], _sage_const_2 )
-			
+			print (k)
 			self.f  = Rx([-_sage_const_1 *int(x) for x in kk[_sage_const_16 :_sage_const_16 +f_len]])._polynomial
 			self.fs = Rx([-_sage_const_1 *int(x) for x in kk[_sage_const_16 +f_len:_sage_const_16 +f_len+fs_len]])._polynomial
+			T  = int(kk[_sage_const_16 +f_len+fs_len:], _sage_const_2 )
+			print (T)
+			if T != self.T:
+				return -_sage_const_1 
 
 		x = Rx(normilize_coeffs(-_sage_const_1 /self.q * m * self.fs))._polynomial % self.q
 		y = Rx(normilize_coeffs(_sage_const_1 /self.q * m * self.f))._polynomial % self.q

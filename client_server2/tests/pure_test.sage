@@ -142,55 +142,67 @@ dg = 71
 t = 'transpose'
 D = '123123asd'
 
+total = [0] * 20
+cur = 0
+nice = []
 while True:
-	global R1
-	global phi
-	global Rx
-	R1.<x> = PolynomialRing(ZZ)
-	phi = x**N - 1
-	Rx = R1.quotient_by_principal_ideal(phi)
+	while True:
+		global R1
+		global phi
+		global Rx
+		R1.<x> = PolynomialRing(ZZ)
+		phi = x**N - 1
+		Rx = R1.quotient_by_principal_ideal(phi)
 
-	B0 = key_generation(N, q, df, dg, 1, t)
-	B1 = key_generation(N, q, df, dg, 1, t)
+		B0 = key_generation(N, q, df, dg, 1, t)
+		B1 = key_generation(N, q, df, dg, 1, t)
 
-	r = randint(0, 77777)
-	s = 0
+		r = randint(0, 77777)
+		cur += 1
+		s = 0
 
-	#	return [f, fs, h]
-	m_default = H(D + str(r), N)
-	m = m_default
+		#	return [f, fs, h]
+		m_default = H(D + str(r), N)
+		m = m_default
 
-	x = Rx(normilize_coeffs(-1/q * m * B1[1]))._polynomial % q
-	y = Rx(normilize_coeffs(1/q * m * B1[0]))._polynomial % q
+		x = Rx(normilize_coeffs(-1/q * m * B1[1]))._polynomial % q
+		y = Rx(normilize_coeffs(1/q * m * B1[0]))._polynomial % q
 
-	si = (Rx(x*B1[0])._polynomial % q + Rx(y*B1[1])._polynomial % q) % q
+		si = (Rx(x*B1[0])._polynomial % q + Rx(y*B1[1])._polynomial % q) % q
 
-	m = Rx(si * (B1[2] - B0[2]))._polynomial % q
+		m = Rx(si * (B1[2] - B0[2]))._polynomial % q
 
-	s = s + si
+		s = s + si
 
-	#####
+		#####
 
-	x = Rx(normilize_coeffs(-1/q * m * B0[1]))._polynomial % q
-	y = Rx(normilize_coeffs(1/q * m * B0[0]))._polynomial % q
+		x = Rx(normilize_coeffs(-1/q * m * B0[1]))._polynomial % q
+		y = Rx(normilize_coeffs(1/q * m * B0[0]))._polynomial % q
 
-	s0 = (Rx(x*B0[0])._polynomial % q + Rx(y*B0[1])._polynomial % q) % q
-		
-	s = s + s0
+		s0 = (Rx(x*B0[0])._polynomial % q + Rx(y*B0[1])._polynomial % q) % q
+			
+		s = s + s0
 
-	n = norm(s) + norm((s*B0[2] - m_default) % q)
-	if n < 0:
-		continue
-	b = sqrt(n)
-	print (b, r)
-	if b <= 310:
-		s = s * 2
-		b = sqrt((norm(s) + norm((s*B0[2] - m_default) % q)))
-		print (b)
-		s = s / 2
-		b = sqrt((norm(s) + norm((s*B0[2] - m_default) % q)))
-		print (b)
-		exit()
+		n = norm(s) + norm((s*B0[2] - m_default) % q)
+		if n < 0:
+			continue
+		b = sqrt(n)
+		#print (b, r)
+		n = int(b) // 100 + 1
+		total[n] += 1
+		print (b, n, total)
+
+		if b <= 310:
+			nice.append(b)
+			s = s * 2
+			b = sqrt((norm(s) + norm((s*B0[2] - m_default) % q)))
+			#print (b)
+			s = s / 2
+			b = sqrt((norm(s) + norm((s*B0[2] - m_default) % q)))
+			#total += 1
+			print (cur, total)
+			break
+			#print (b)
 
 
 	#b = sqrt(s.norm(2)**2 + ((s*B0[2] - m_default) % q).norm(2)**2)
